@@ -271,6 +271,112 @@ class NanoBananaAgent:
         return (batch_tensor, final_text, updated_history)
 
 
+class NanoBananaLLM:
+    """A ComfyUI Node for text-only LLM generation using the Gemini API."""
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "api_key": (
+                    "STRING",
+                    {
+                        "default": "Enter API Key or use GEMINI_API_KEY env",
+                        "multiline": False,
+                        "tooltip": "Your Gemini API Key. Can also be set via the GEMINI_API_KEY environment variable.",
+                    },
+                ),
+                "system_prompt": (
+                    "STRING",
+                    {
+                        "multiline": True,
+                        "default": "You are a helpful assistant.",
+                        "tooltip": "The system instruction that defines the LLM's behavior.",
+                    },
+                ),
+                "user_input": (
+                    "STRING",
+                    {
+                        "multiline": True,
+                        "default": "",
+                        "tooltip": "The primary text input for the LLM. Can be typed directly or wired from another node.",
+                    },
+                ),
+                "model": (
+                    ["gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-2.5-pro", "gemini-3-flash-preview", "gemini-3-pro-preview", "gemini-3.1-pro-preview"],
+                    {
+                        "default": "gemini-2.5-flash",
+                        "tooltip": "The Gemini model to use for text generation.",
+                    },
+                ),
+                "temperature": (
+                    "FLOAT",
+                    {
+                        "default": 0.7,
+                        "min": 0.0,
+                        "max": 2.0,
+                        "step": 0.05,
+                        "tooltip": "Controls randomness. Lower values are more deterministic, higher values are more creative.",
+                    },
+                ),
+            },
+            "optional": {
+                "context": (
+                    "STRING",
+                    {
+                        "forceInput": True,
+                        "tooltip": "Optional context wired from an upstream node. Prepended to user_input.",
+                    },
+                ),
+            },
+        }
+
+    RETURN_TYPES = ("STRING",)
+    RETURN_NAMES = ("text",)
+    FUNCTION = "generate_text"
+    CATEGORY = "Nano Banana"
+    DESCRIPTION = "Generates text using the Gemini API. Useful for classification, prompt engineering, and other text-only LLM tasks."
+
+    def _get_api_key(self, api_key_input: str) -> str:
+        key = (
+            os.environ.get("GEMINI_API_KEY")
+            if "GEMINI_API_KEY" not in api_key_input
+            and api_key_input == "Enter API Key or use GEMINI_API_KEY env"
+            else api_key_input
+        )
+        if not key or key == "Enter API Key or use GEMINI_API_KEY env":
+            key = os.environ.get("GEMINI_API_KEY")
+            if not key:
+                raise ValueError(
+                    "Nano Banana: API Key is required. Please provide it in the node or set the GEMINI_API_KEY environment variable."
+                )
+        return key
+
+    def generate_text(self, api_key, system_prompt, user_input, model, temperature, context=None):
+        key = self._get_api_key(api_key)
+        client = genai.Client(api_key=key)
+
+        if context and context.strip():
+            combined_input = f"{context.strip()}\n\n{user_input}"
+        else:
+            combined_input = user_input
+
+        config = types.GenerateContentConfig(
+            system_instruction=system_prompt,
+            response_modalities=["TEXT"],
+            temperature=temperature,
+        )
+
+        try:
+            response = client.models.generate_content(
+                model=model, contents=combined_input, config=config,
+            )
+        except Exception as e:
+            raise ValueError(f"Nano Banana LLM API call failed: {e}")
+
+        return (response.text or "",)
+
+
 class NanoBananaTextDisplay:
     """A ComfyUI Node to display text directly on the canvas."""
 
@@ -302,10 +408,12 @@ class NanoBananaTextDisplay:
 # Register the nodes
 NODE_CLASS_MAPPINGS = {
     "NanoBananaAgent": NanoBananaAgent,
+    "NanoBananaLLM": NanoBananaLLM,
     "NanoBananaTextDisplay": NanoBananaTextDisplay,
 }
 NODE_DISPLAY_NAME_MAPPINGS = {
     "NanoBananaAgent": "Nano Banana Agent",
+    "NanoBananaLLM": "Nano Banana LLM",
     "NanoBananaTextDisplay": "Nano Banana Text Display",
 }
 WEB_DIRECTORY = "./js"
