@@ -156,7 +156,8 @@ class NanoBananaAgent:
 
         config = types.GenerateContentConfig(**config_options)
 
-        messages = chat_history.copy() if chat_history is not None else []
+        history = chat_history if chat_history is not None else []
+        chat = client.chats.create(model=model, config=config, history=history)
 
         actual_batch_mode = batch_mode
         if (
@@ -180,18 +181,12 @@ class NanoBananaAgent:
                 pil_img = Image.fromarray(np.clip(img_np, 0, 255).astype(np.uint8))
                 current_turn.append(pil_img)
 
-                turn_messages = messages.copy()
-                turn_messages.extend(current_turn)
-
                 try:
-                    response = client.models.generate_content(
-                        model=model, contents=turn_messages, config=config
-                    )
+                    response = chat.send_message(current_turn)
                 except Exception as e:
                     print(f"Nano Banana API Error: {e}")
                     raise ValueError(f"Nano Banana API call failed: {e}")
 
-                assistant_turn = []
                 for part in response.parts:
                     is_thought = getattr(part, "thought", False)
                     if is_thought and show_thoughts:
@@ -205,15 +200,10 @@ class NanoBananaAgent:
                             )
                     elif part.text and not is_thought:
                         all_text_outputs.append(f"<Response>\n{part.text}\n</Response>")
-                        assistant_turn.append(part.text)
 
                     pil_output = getattr(part, "as_image", lambda: None)()
                     if pil_output:
                         all_pil_outputs.append(pil_output)
-                        assistant_turn.append(pil_output)
-
-                turn_messages.extend(assistant_turn)
-                messages = turn_messages
         else:
             current_turn = [prompt]
             if reference_image is not None:
@@ -222,17 +212,12 @@ class NanoBananaAgent:
                     pil_img = Image.fromarray(np.clip(img_np, 0, 255).astype(np.uint8))
                     current_turn.append(pil_img)
 
-            messages.extend(current_turn)
-
             try:
-                response = client.models.generate_content(
-                    model=model, contents=messages, config=config
-                )
+                response = chat.send_message(current_turn)
             except Exception as e:
                 print(f"Nano Banana API Error: {e}")
                 raise ValueError(f"Nano Banana API call failed: {e}")
 
-            assistant_turn = []
             for part in response.parts:
                 is_thought = getattr(part, "thought", False)
                 if is_thought and show_thoughts:
@@ -244,14 +229,12 @@ class NanoBananaAgent:
                         )
                 elif part.text and not is_thought:
                     all_text_outputs.append(f"<Response>\n{part.text}\n</Response>")
-                    assistant_turn.append(part.text)
 
                 pil_output = getattr(part, "as_image", lambda: None)()
                 if pil_output:
                     all_pil_outputs.append(pil_output)
-                    assistant_turn.append(pil_output)
 
-            messages.extend(assistant_turn)
+        updated_history = chat.get_history()
 
         if not all_pil_outputs:
             print("Nano Banana Warning: No image returned from API.")
@@ -262,7 +245,7 @@ class NanoBananaAgent:
 
         final_text = "\n\n".join(all_text_outputs)
 
-        return (batch_tensor, final_text, messages)
+        return (batch_tensor, final_text, updated_history)
 
 
 class NanoBananaTextDisplay:
