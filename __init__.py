@@ -154,6 +154,9 @@ class NanoBananaAgent:
         if enable_search:
             config_options["tools"] = [{"google_search": {}}]
 
+        if show_thoughts:
+            config_options["thinking_config"] = {"include_thoughts": True}
+
         config = types.GenerateContentConfig(**config_options)
 
         history = chat_history if chat_history is not None else []
