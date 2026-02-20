@@ -189,19 +189,19 @@ class NanoBananaAgent:
 
                 for part in response.parts:
                     is_thought = getattr(part, "thought", False)
+                    pil_output = getattr(part, "as_image", lambda: None)()
                     if is_thought and show_thoughts:
                         if part.text:
                             all_text_outputs.append(
                                 f"<Thought>\n{part.text}\n</Thought>"
                             )
-                        elif getattr(part, "inline_data", None):
+                        elif pil_output is not None:
                             all_text_outputs.append(
                                 "<Thought>\n[Intermediate image generated]\n</Thought>"
                             )
                     elif part.text and not is_thought:
                         all_text_outputs.append(f"<Response>\n{part.text}\n</Response>")
 
-                    pil_output = getattr(part, "as_image", lambda: None)()
                     if pil_output:
                         all_pil_outputs.append(pil_output)
         else:
@@ -220,17 +220,17 @@ class NanoBananaAgent:
 
             for part in response.parts:
                 is_thought = getattr(part, "thought", False)
+                pil_output = getattr(part, "as_image", lambda: None)()
                 if is_thought and show_thoughts:
                     if part.text:
                         all_text_outputs.append(f"<Thought>\n{part.text}\n</Thought>")
-                    elif getattr(part, "inline_data", None):
+                    elif pil_output is not None:
                         all_text_outputs.append(
                             "<Thought>\n[Intermediate image generated]\n</Thought>"
                         )
                 elif part.text and not is_thought:
                     all_text_outputs.append(f"<Response>\n{part.text}\n</Response>")
 
-                pil_output = getattr(part, "as_image", lambda: None)()
                 if pil_output:
                     all_pil_outputs.append(pil_output)
 
