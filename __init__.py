@@ -377,6 +377,127 @@ class NanoBananaLLM:
         return (response.text or "",)
 
 
+class NanoBananaLoadText:
+    """A ComfyUI Node to load text content from a file."""
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "file_path": (
+                    "STRING",
+                    {
+                        "default": "",
+                        "multiline": False,
+                        "tooltip": "Absolute or relative path to a .txt or .md file.",
+                    },
+                ),
+            },
+        }
+
+    RETURN_TYPES = ("STRING",)
+    RETURN_NAMES = ("text",)
+    FUNCTION = "load_text"
+    CATEGORY = "Nano Banana"
+    DESCRIPTION = "Loads text content from a file on disk. Supports .txt, .md, and other plain text formats."
+
+    def load_text(self, file_path):
+        path = os.path.expanduser(file_path.strip())
+        if not os.path.isfile(path):
+            raise FileNotFoundError(f"Nano Banana Load Text: File not found: {path}")
+        with open(path, "r", encoding="utf-8") as f:
+            text = f.read()
+        return (text,)
+
+
+class NanoBananaTextRouter:
+    """A ComfyUI Node that maps a category string to a corresponding value."""
+
+    CATEGORIES = ["Projects", "Reflections", "Media", "Logic", "Journaling"]
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "category": (
+                    "STRING",
+                    {
+                        "forceInput": True,
+                        "tooltip": "The category string from a categorizer node.",
+                    },
+                ),
+                "projects": (
+                    "STRING",
+                    {
+                        "default": "",
+                        "multiline": True,
+                        "tooltip": "Value to output when category matches 'Projects'.",
+                    },
+                ),
+                "reflections": (
+                    "STRING",
+                    {
+                        "default": "",
+                        "multiline": True,
+                        "tooltip": "Value to output when category matches 'Reflections'.",
+                    },
+                ),
+                "media": (
+                    "STRING",
+                    {
+                        "default": "",
+                        "multiline": True,
+                        "tooltip": "Value to output when category matches 'Media'.",
+                    },
+                ),
+                "logic": (
+                    "STRING",
+                    {
+                        "default": "",
+                        "multiline": True,
+                        "tooltip": "Value to output when category matches 'Logic'.",
+                    },
+                ),
+                "journaling": (
+                    "STRING",
+                    {
+                        "default": "",
+                        "multiline": True,
+                        "tooltip": "Value to output when category matches 'Journaling'.",
+                    },
+                ),
+                "default": (
+                    "STRING",
+                    {
+                        "default": "",
+                        "multiline": True,
+                        "tooltip": "Fallback value when category doesn't match any option.",
+                    },
+                ),
+            },
+        }
+
+    RETURN_TYPES = ("STRING",)
+    RETURN_NAMES = ("value",)
+    FUNCTION = "route"
+    CATEGORY = "Nano Banana"
+    DESCRIPTION = "Maps a category string (Projects, Reflections, Media, Logic, Journaling) to a corresponding value. Useful for routing LoRA names, style keywords, or other per-category settings."
+
+    def route(self, category, projects, reflections, media, logic, journaling, default):
+        lookup = {
+            "projects": projects,
+            "reflections": reflections,
+            "media": media,
+            "logic": logic,
+            "journaling": journaling,
+        }
+        normalized = category.strip().lower()
+        value = lookup.get(normalized, default)
+        if not value:
+            value = default
+        return (value,)
+
+
 class NanoBananaTextDisplay:
     """A ComfyUI Node to display text directly on the canvas."""
 
@@ -409,11 +530,15 @@ class NanoBananaTextDisplay:
 NODE_CLASS_MAPPINGS = {
     "NanoBananaAgent": NanoBananaAgent,
     "NanoBananaLLM": NanoBananaLLM,
+    "NanoBananaLoadText": NanoBananaLoadText,
+    "NanoBananaTextRouter": NanoBananaTextRouter,
     "NanoBananaTextDisplay": NanoBananaTextDisplay,
 }
 NODE_DISPLAY_NAME_MAPPINGS = {
     "NanoBananaAgent": "Nano Banana Agent",
     "NanoBananaLLM": "Nano Banana LLM",
+    "NanoBananaLoadText": "Nano Banana Load Text",
+    "NanoBananaTextRouter": "Nano Banana Text Router",
     "NanoBananaTextDisplay": "Nano Banana Text Display",
 }
 WEB_DIRECTORY = "./js"
