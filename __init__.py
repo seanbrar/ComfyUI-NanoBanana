@@ -188,22 +188,31 @@ class NanoBananaAgent:
                     raise ValueError(f"Nano Banana API call failed: {e}")
 
                 for part in response.parts:
-                    is_thought = getattr(part, "thought", False)
-                    pil_output = getattr(part, "as_image", lambda: None)()
-                    if is_thought and show_thoughts:
-                        if part.text:
-                            all_text_outputs.append(
-                                f"<Thought>\n{part.text}\n</Thought>"
-                            )
-                        elif pil_output is not None:
-                            all_text_outputs.append(
-                                "<Thought>\n[Intermediate image generated]\n</Thought>"
-                            )
-                    elif part.text and not is_thought:
-                        all_text_outputs.append(f"<Response>\n{part.text}\n</Response>")
-
-                    if pil_output:
-                        all_pil_outputs.append(pil_output)
+                    try:
+                        if part.thought:
+                            if show_thoughts:
+                                if part.text:
+                                    all_text_outputs.append(
+                                        f"<Thought>\n{part.text}\n</Thought>"
+                                    )
+                                else:
+                                    pil_output = part.as_image()
+                                    if pil_output:
+                                        all_text_outputs.append(
+                                            "<Thought>\n[Intermediate image generated]\n</Thought>"
+                                        )
+                                        all_pil_outputs.append(pil_output)
+                        else:
+                            if part.text:
+                                all_text_outputs.append(
+                                    f"<Response>\n{part.text}\n</Response>"
+                                )
+                            else:
+                                pil_output = part.as_image()
+                                if pil_output:
+                                    all_pil_outputs.append(pil_output)
+                    except Exception as e:
+                        print(f"NanoBanana warning during part parsing: {e}")
         else:
             current_turn = [prompt]
             if reference_image is not None:
@@ -219,20 +228,31 @@ class NanoBananaAgent:
                 raise ValueError(f"Nano Banana API call failed: {e}")
 
             for part in response.parts:
-                is_thought = getattr(part, "thought", False)
-                pil_output = getattr(part, "as_image", lambda: None)()
-                if is_thought and show_thoughts:
-                    if part.text:
-                        all_text_outputs.append(f"<Thought>\n{part.text}\n</Thought>")
-                    elif pil_output is not None:
-                        all_text_outputs.append(
-                            "<Thought>\n[Intermediate image generated]\n</Thought>"
-                        )
-                elif part.text and not is_thought:
-                    all_text_outputs.append(f"<Response>\n{part.text}\n</Response>")
-
-                if pil_output:
-                    all_pil_outputs.append(pil_output)
+                try:
+                    if part.thought:
+                        if show_thoughts:
+                            if part.text:
+                                all_text_outputs.append(
+                                    f"<Thought>\n{part.text}\n</Thought>"
+                                )
+                            else:
+                                pil_output = part.as_image()
+                                if pil_output:
+                                    all_text_outputs.append(
+                                        "<Thought>\n[Intermediate image generated]\n</Thought>"
+                                    )
+                                    all_pil_outputs.append(pil_output)
+                    else:
+                        if part.text:
+                            all_text_outputs.append(
+                                f"<Response>\n{part.text}\n</Response>"
+                            )
+                        else:
+                            pil_output = part.as_image()
+                            if pil_output:
+                                all_pil_outputs.append(pil_output)
+                except Exception as e:
+                    print(f"NanoBanana warning during part parsing: {e}")
 
         updated_history = chat.get_history()
 
