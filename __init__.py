@@ -71,7 +71,12 @@ class NanoBananaGenerator:
                 )
         return key
 
-    def _pil_to_tensor(self, img: Image.Image) -> torch.Tensor:
+    def _pil_to_tensor(self, img) -> torch.Tensor:
+        if hasattr(img, "image_bytes") and getattr(img, "image_bytes", None):
+            import io
+
+            img = Image.open(io.BytesIO(img.image_bytes))
+
         image_tensor = img.convert("RGB")
         image_tensor = np.array(image_tensor).astype(np.float32) / 255.0
         image_tensor = np.clip(image_tensor, 0.0, 1.0)
@@ -233,7 +238,12 @@ class NanoBananaChat:
                 raise ValueError("Nano Banana: API Key is required.")
         return key
 
-    def _pil_to_tensor(self, img: Image.Image) -> torch.Tensor:
+    def _pil_to_tensor(self, img) -> torch.Tensor:
+        if hasattr(img, "image_bytes") and getattr(img, "image_bytes", None):
+            import io
+
+            img = Image.open(io.BytesIO(img.image_bytes))
+
         image_tensor = img.convert("RGB")
         image_tensor = np.array(image_tensor).astype(np.float32) / 255.0
         image_tensor = np.clip(image_tensor, 0.0, 1.0)
