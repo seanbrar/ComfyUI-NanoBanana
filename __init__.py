@@ -74,7 +74,7 @@ class NanoBananaAgent:
                         "default": False,
                         "label_on": "Enabled",
                         "label_off": "Disabled",
-                        "tooltip": "Output the internal reasoning process of the model in the text_output.",
+                        "tooltip": "Output the internal reasoning process of the model in the text_output. Only supported with the Pro model; ignored when using Flash.",
                     },
                 ),
             },
@@ -155,7 +155,12 @@ class NanoBananaAgent:
             config_options["tools"] = [{"google_search": {}}]
 
         if show_thoughts:
-            config_options["thinking_config"] = {"include_thoughts": True}
+            if use_pro:
+                config_options["thinking_config"] = {"include_thoughts": True}
+            else:
+                print(
+                    "Nano Banana Warning: 'show_thoughts' is only supported with the Pro model. Ignoring for Flash."
+                )
 
         config = types.GenerateContentConfig(**config_options)
 
